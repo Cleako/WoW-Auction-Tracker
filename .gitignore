@@ -102,3 +102,5 @@ ENV/
 
 # JSON from API
 auctions.json
+
+.DS_Store
