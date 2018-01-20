@@ -4,13 +4,14 @@ import requests
 import json
 import pymysql.cursors
 
-# Download fresh JSON
+
+# Downloads the latest auctions
 file = 'http://auction-api-us.worldofwarcraft.com/auction-data/SECRET_API_KEY/auctions.json'
 r = requests.get(file)
 with open('auctions.json', 'wb') as f:
   f.write(r.content)
-
 data = json.load(open('auctions.json'))
+
 
 # Connect to the database
 connection = pymysql.connect(host='localhost',
@@ -20,13 +21,15 @@ connection = pymysql.connect(host='localhost',
                              charset='utf8mb4',
                              cursorclass=pymysql.cursors.DictCursor)
 
+
+# Empty the old auctions table database entries
 try:
-# Truncate the table
    with connection.cursor() as cursor:
-        query = "TRUNCATE `items`"
+        query = "TRUNCATE `auctions`"
         cursor.execute(query)
 
-# Insert new data from JSON
+
+# Import the latest auction house data from the JSON file
    with connection.cursor() as cursor:
        index = 0
        while index != None:
@@ -40,18 +43,20 @@ try:
            timeLeft = data["auctions"][index]["timeLeft"]
 
            sql = auc, item, owner, ownerRealm, bid, buyout, quantity, timeLeft
-           cursor.execute("INSERT INTO items (`auc`, `item`, `owner`, `ownerRealm`, `bid`, `buyout`, `quantity`, `timeLeft`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", sql)
+           cursor.execute("INSERT INTO auctions (`auc`, `item`, `owner`, `ownerRealm`, `bid`, `buyout`, `quantity`, `timeLeft`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", sql)
            connection.commit()
            index = index+1
-
 except IndexError:
     pass
 
-# Count number of auctions
+
+# Count number of auctions that were added
 with connection.cursor() as cursor:
-    query = "SELECT COUNT(`auc`) from `items`"
+    query = "SELECT COUNT(`auc`) from `auctions`"
     cursor.execute(query)
     res = cursor.fetchone()
     print(res)
 
+
+# Done
 connection.close()
